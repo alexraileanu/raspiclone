@@ -1,0 +1,27 @@
+#!/bin/bash
+
+dir=$(mktemp -d)
+
+cleanup(){
+    cd /tmp/ # You can't umount or rm a directory while you are in it.
+    for m in /dev/ /tmp/ /var/log/ /boot/ /; do
+        sudo umount ${dir}${m}
+    done
+    rm -rf ${dir}
+}
+
+do_mounts(){
+    sudo mount                     /dev/mmcblk0p2    ${dir}/
+    sudo mount -t tmpfs -o size=1m tmpfs             ${dir}/dev/
+    sudo mount -t tmpfs -o size=1m tmpfs             ${dir}/tmp/
+    sudo mount -t tmpfs -o size=1m tmpfs             ${dir}/var/log/
+    sudo mount                     /dev/mmcblk0p1    ${dir}/boot/
+}
+
+send_data() {
+    rsync -avH --delete-during --delete-excluded --exclude-from=/root/backup/rsync-exclude ${dir}/* srv@host:$backup_path
+}
+
+do_mounts
+send_data
+cleanup
