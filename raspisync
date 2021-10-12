@@ -1,8 +1,16 @@
 #!/bin/bash
 
 DIR=$(mktemp -d)
-BACKUP_PATH=$1
-REMOTE=$2
+REMOTE=$1
+BACKUP_PATH=$2
+
+SERVICES_TO_STOP=("pihole" "mariadb")
+
+pre_backup() {
+  for service in "${SERVICES_TO_STOP[@]}"; do
+    docker stop $service
+  done
+}
 
 cleanup() {
   cd /tmp/ # You can't umount or rm a directory while you are in it.
@@ -21,9 +29,17 @@ do_mounts() {
 }
 
 send_data() {
-  rsync -avH --delete-during --delete-excluded --exclude-from=/root/backup/rsync-exclude ${DIR}/* $REMOTE:BACKUP_PATH
+  rsync -avH --delete-during --delete-excluded --exclude-from=/root/backup/rsync-exclude ${DIR}/* $REMOTE:$BACKUP_PATH
 }
 
+post_backup() {
+ for service in "${SERVICES_TO_STOP[@]}"; do
+     docker start $service
+   done
+}
+
+pre_backup
 do_mounts
 send_data
 cleanup
+post_backup
