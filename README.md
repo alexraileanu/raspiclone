@@ -1,4 +1,4 @@
-### raspiclone
+### raspisync
 
 personal script for sending incremental backups to a remote server using rsync.
 
